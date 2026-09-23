@@ -18,30 +18,32 @@ func NewPropertyRepository(collection *mongo.Collection) *PropertyRepository {
 	return &PropertyRepository{collection: collection}
 }
 
-func (r *PropertyRepository) SearchByHexagons(ctx context.Context, hexagons []string, resolution int, page, limit int64) ([]bson.M, int64, error) {
-	if resolution < 7 || resolution > 9 {
-		return nil, 0, fmt.Errorf("unsupported H3 resolution: %d", resolution)
+func (r *PropertyRepository) SearchByHexagons(ctx context.Context, hexagons []string, resolution int) ([]bson.M, error) {
+	if resolution < 6 || resolution > 11 {
+		return nil, fmt.Errorf("unsupported H3 resolution: %d", resolution)
 	}
 	listings := []bson.M{}
 	if len(hexagons) == 0 {
-		return listings, 0, nil
+		return listings, nil
 	}
 	filter := bson.M{fmt.Sprintf("h3_res%d", resolution): bson.M{"$in": hexagons}}
-	if page < 1 || limit < 1 || limit > 100 || page-1 > (1<<63-1)/limit {
-		return nil, 0, fmt.Errorf("invalid pagination")
-	}
-	total, err := r.collection.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-	opts := options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}).SetSkip((page - 1) * limit).SetLimit(limit)
+	opts := options.Find().SetProjection(bson.M{
+		"_id": 1, "listing_id": 1, "listing_type": 1, "coverImageKey": 1, "currency": 1,
+		"h3_res7": 1, "h3_res8": 1, "h3_res9": 1,
+		"listing_details.listing_name": 1, "listing_details.listing_status": 1,
+		"listing_details.bhk_type": 1, "listing_details.area": 1,
+		"listing_details.area_unit_type": 1, "listing_details.furnishing": 1,
+		"commercial_details.property_price": 1,
+		"listing_address.lat":               1, "listing_address.lng": 1,
+		"listing_address.locality": 1, "listing_address.city": 1,
+	})
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
-		return nil, 0, err
+		return nil, fmt.Errorf("find listings in %s.%s: %w", r.collection.Database().Name(), r.collection.Name(), err)
 	}
 	defer cursor.Close(ctx)
 	if err := cursor.All(ctx, &listings); err != nil {
-		return nil, 0, err
+		return nil, fmt.Errorf("decode listings in %s.%s: %w", r.collection.Database().Name(), r.collection.Name(), err)
 	}
-	return listings, total, nil
+	return listings, nil
 }

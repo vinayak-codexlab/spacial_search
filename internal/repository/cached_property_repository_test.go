@@ -42,15 +42,15 @@ type sourceStub struct {
 	empty bool
 }
 
-func (s *sourceStub) SearchByHexagons(context.Context, []string, int, int64, int64) ([]bson.M, int64, error) {
+func (s *sourceStub) SearchByHexagons(context.Context, []string, int) ([]bson.M, error) {
 	s.calls++
 	if s.err != nil {
-		return nil, 0, s.err
+		return nil, s.err
 	}
 	if s.empty {
-		return nil, 0, nil
+		return nil, nil
 	}
-	return []bson.M{{"title": "Example", "h3_res8": "abc", "custom": bson.M{"rooms": 3}, "large_number": int64(9007199254740993)}}, 21, nil
+	return []bson.M{{"title": "Example", "h3_res8": "abc", "custom": bson.M{"rooms": 3}, "large_number": int64(9007199254740993)}}, nil
 }
 
 func TestCachedSearch(t *testing.T) {
@@ -61,9 +61,9 @@ func TestCachedSearch(t *testing.T) {
 	cells := []string{"b", "a"}
 	var firstJSON string
 	for _, order := range [][]string{cells, {"a", "b"}} {
-		listings, total, err := repo.SearchByHexagons(ctx, order, 8, 1, 10)
-		if err != nil || total != 21 || len(listings) != 1 || listings[0]["h3_res8"] != "abc" {
-			t.Fatalf("bad result: %v %d %v", listings, total, err)
+		listings, err := repo.SearchByHexagons(ctx, order, 8)
+		if err != nil || len(listings) != 1 || listings[0]["h3_res8"] != "abc" {
+			t.Fatalf("bad result: %v %v", listings, err)
 		}
 		raw, marshalErr := json.Marshal(listings)
 		if marshalErr != nil {
@@ -79,19 +79,17 @@ func TestCachedSearch(t *testing.T) {
 	if source.calls != 1 || cache.writes != 1 || cache.ttl != 30*time.Second || cells[0] != "b" {
 		t.Fatal("cache did not reuse sorted key, preserve input or apply TTL")
 	}
-	for _, request := range []struct {
-		res         int
-		page, limit int64
-	}{{8, 2, 10}, {8, 1, 20}, {9, 1, 10}} {
-		if _, _, err := repo.SearchByHexagons(ctx, cells, request.res, request.page, request.limit); err != nil {
-			t.Fatal(err)
-		}
-	}
-	other := NewCachedPropertyRepository(source, cache, "other/listings", 30*time.Second)
-	if _, _, err := other.SearchByHexagons(ctx, cells, 8, 1, 10); err != nil {
+	if _, err := repo.SearchByHexagons(ctx, cells, 9); err != nil {
 		t.Fatal(err)
 	}
-	if source.calls != 5 {
+	if _, err := repo.SearchByHexagons(ctx, []string{"c"}, 8); err != nil {
+		t.Fatal(err)
+	}
+	other := NewCachedPropertyRepository(source, cache, "other/listings", 30*time.Second)
+	if _, err := other.SearchByHexagons(ctx, cells, 8); err != nil {
+		t.Fatal(err)
+	}
+	if source.calls != 4 {
 		t.Fatalf("cache keys collided: %d calls", source.calls)
 	}
 }
@@ -108,13 +106,13 @@ func TestCacheFallback(t *testing.T) {
 			case "write failure":
 				cache.setErr = errors.New("offline")
 			case "corrupt":
-				cache.entries[repo.key([]string{"a"}, 8, 1, 10)] = []byte(`{"listings":`)
+				cache.entries[repo.key([]string{"a"}, 8)] = []byte(`{"listings":`)
 			case "database failure":
 				source.err = errors.New("db failed")
 			case "empty":
 				source.empty = true
 			}
-			listings, _, err := repo.SearchByHexagons(context.Background(), []string{"a"}, 8, 1, 10)
+			listings, err := repo.SearchByHexagons(context.Background(), []string{"a"}, 8)
 			if mode == "database failure" {
 				if !errors.Is(err, source.err) || cache.writes != 0 {
 					t.Fatal("database errors must not be cached")
@@ -123,8 +121,8 @@ func TestCacheFallback(t *testing.T) {
 				t.Fatalf("fallback failed: %v", err)
 			}
 			if mode == "empty" {
-				listings, total, err := repo.SearchByHexagons(context.Background(), []string{"a"}, 8, 1, 10)
-				if err != nil || total != 0 || len(listings) != 0 || source.calls != 1 {
+				listings, err := repo.SearchByHexagons(context.Background(), []string{"a"}, 8)
+				if err != nil || len(listings) != 0 || source.calls != 1 {
 					t.Fatal("empty result was not cached")
 				}
 			}

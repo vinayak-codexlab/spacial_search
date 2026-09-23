@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -15,8 +16,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SearchTimeout bounds MongoDB work, including fetching all cursor batches.
+const SearchTimeout = 30 * time.Second
+
 type PropertySearcher interface {
-	SearchByHexagons(context.Context, []string, int, int64, int64) ([]bson.M, int64, error)
+	SearchByHexagons(context.Context, []string, int) ([]bson.M, error)
 }
 
 type SearchHandler struct {
@@ -45,45 +49,21 @@ func (h *SearchHandler) SearchProperties(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "Zoom must be an integer between 0 and 22")
 		return
 	}
-	pageValue := c.Query("page")
-	if pageValue == "" {
-		pageValue = "1"
-	}
-	page, err := strconv.ParseInt(pageValue, 10, 64)
-	if err == nil && page < 0 {
-		page = 1
-	}
-	if err != nil || page < 1 {
-		response.Error(c, http.StatusBadRequest, "Page must be a positive integer")
-		return
-	}
-	limitValue := c.Query("limit")
-	if limitValue == "" {
-		limitValue = "10"
-	}
-	limit, err := strconv.ParseInt(limitValue, 10, 64)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Limit must be an integer")
-		return
-	}
-	if limit < 0 {
-		limit = 10
-	} else if limit > 100 {
-		limit = 100
-	}
-	if limit == 0 || page-1 > math.MaxInt64/limit {
-		response.Error(c, http.StatusBadRequest, "Limit must be between 1 and 100 and page must not overflow")
+	// H3 accepts k as a signed 32-bit C integer.
+	ring, err := strconv.ParseInt(c.DefaultQuery("ring", "1"), 10, 32)
+	if err != nil || ring < 0 {
+		response.Error(c, http.StatusBadRequest, "Ring must be a nonnegative integer supported by H3")
 		return
 	}
 	resolution := h.h3Service.MapZoomResolution(zoom)
-	hexagons := h.h3Service.GetTargetHexagons(lat, lng, resolution, 1)
+	hexagons := h.h3Service.GetTargetHexagons(lat, lng, resolution, int(ring))
 	if len(hexagons) == 0 {
 		response.Error(c, http.StatusInternalServerError, "Unable to calculate search area")
 		return
 	}
-	queryCtx, cancel := context.WithTimeout(c.Request.Context(), 3*time.Second)
+	queryCtx, cancel := context.WithTimeout(c.Request.Context(), SearchTimeout)
 	defer cancel()
-	listings, total, err := h.repository.SearchByHexagons(queryCtx, hexagons, resolution, page, limit)
+	listings, err := h.repository.SearchByHexagons(queryCtx, hexagons, resolution)
 	if err != nil {
 		h.logger.Printf("property search failed: %v", err)
 		response.Error(c, http.StatusInternalServerError, "Unable to search properties")
@@ -92,13 +72,15 @@ func (h *SearchHandler) SearchProperties(c *gin.Context) {
 	if listings == nil {
 		listings = []bson.M{}
 	}
-	totalPages := total / limit
-	if total%limit != 0 {
-		totalPages++
+	for i, listing := range listings {
+		listings[i] = response.ListingSummary(listing)
 	}
 	c.JSON(http.StatusOK, response.ListResponse[bson.M]{
-		Success: true, Message: "listings fetched successfully",
-		Pagination: response.Pagination{Page: page, Limit: limit, Total: total, TotalPages: totalPages},
-		Data:       listings,
+		Success: true, Message: "Data fetched successfully",
+		Meta: response.SearchMeta{
+			Count: len(listings), ResolutionUsed: fmt.Sprintf("h3_res%d", resolution),
+			Zoom: zoom, Ring: int(ring), TargetHexesCount: len(hexagons),
+		},
+		Data: listings,
 	})
 }

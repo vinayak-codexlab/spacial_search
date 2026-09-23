@@ -24,6 +24,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *log.Logger) error {
 		return err
 	}
 	logger.Println("DB connected successfully")
+	logger.Printf("Searching MongoDB database=%s collection=%s", cfg.DBName, cfg.Collection)
 	defer func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -46,7 +47,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *log.Logger) error {
 	server := &http.Server{
 		Addr: ":" + cfg.Port, Handler: router.New(search, logger),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second,
-		WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second,
+		WriteTimeout: handler.SearchTimeout + 10*time.Second, IdleTimeout: 60 * time.Second,
 	}
 	listener, err := net.Listen("tcp", server.Addr)
 	if err != nil {
