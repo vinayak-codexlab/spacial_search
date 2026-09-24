@@ -9,6 +9,7 @@ type H3Service struct{}
 func NewH3Service() *H3Service {
 	return &H3Service{}
 }
+//map resolutions based on the zoom level
 func (s *H3Service) MapZoomResolution(zoom int) int {
 	switch {
 	case zoom <= 4:
