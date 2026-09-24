@@ -4,12 +4,17 @@ import (
 	"github.com/uber/h3-go/v4"
 )
 
+// MaxSearchRing bounds GridDisk memory and keeps the MongoDB $in filter well
+// below the BSON command limit (at most 30,301 H3 cells).
+const MaxSearchRing = 100
+
 type H3Service struct{}
 
 func NewH3Service() *H3Service {
 	return &H3Service{}
 }
-//map resolutions based on the zoom level
+
+// map resolutions based on the zoom level
 func (s *H3Service) MapZoomResolution(zoom int) int {
 	switch {
 	case zoom <= 4:
@@ -27,6 +32,9 @@ func (s *H3Service) MapZoomResolution(zoom int) int {
 	}
 }
 func (s *H3Service) GetTargetHexagons(lat, lng float64, resolution, kRingSize int) []string {
+	if kRingSize < 0 || kRingSize > MaxSearchRing {
+		return nil
+	}
 	latLng := h3.NewLatLng(lat, lng)
 	originCell, err := h3.LatLngToCell(latLng, resolution)
 	if err != nil {

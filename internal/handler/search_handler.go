@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"h3-spacial-service/internal/response"
 	"h3-spacial-service/internal/service"
 
@@ -49,10 +51,10 @@ func (h *SearchHandler) SearchProperties(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "Zoom must be an integer between 0 and 22")
 		return
 	}
-	// H3 accepts k as a signed 32-bit C integer.
+	// Validate before allocating H3 cells or constructing a cache/database query.
 	ring, err := strconv.ParseInt(c.DefaultQuery("ring", "1"), 10, 32)
-	if err != nil || ring < 0 {
-		response.Error(c, http.StatusBadRequest, "Ring must be a nonnegative integer supported by H3")
+	if err != nil || ring < 0 || ring > service.MaxSearchRing {
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Ring must be an integer between 0 and %d", service.MaxSearchRing))
 		return
 	}
 	resolution := h.h3Service.MapZoomResolution(zoom)
@@ -66,6 +68,11 @@ func (h *SearchHandler) SearchProperties(c *gin.Context) {
 	listings, err := h.repository.SearchByHexagons(queryCtx, hexagons, resolution)
 	if err != nil {
 		h.logger.Printf("property search failed: %v", err)
+		var serverErr mongo.ServerError
+		if errors.As(err, &serverErr) && serverErr.HasErrorCode(10334) { // BSONObjectTooLarge
+			response.Error(c, http.StatusBadRequest, "Search area is too large. Reduce ring size and try again")
+			return
+		}
 		response.Error(c, http.StatusInternalServerError, "Unable to search properties")
 		return
 	}

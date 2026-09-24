@@ -14,3 +14,16 @@ func TestMapZoomResolution(t *testing.T) {
 		}
 	}
 }
+
+func TestSearchRingBounds(t *testing.T) {
+	s := NewH3Service()
+	for _, ring := range []int{-1, MaxSearchRing + 1, 2147483647} {
+		if cells := s.GetTargetHexagons(28, 77, 9, ring); cells != nil {
+			t.Fatalf("ring %d should be rejected", ring)
+		}
+	}
+	cells := s.GetTargetHexagons(28, 77, 9, MaxSearchRing)
+	if want := 1 + 3*MaxSearchRing*(MaxSearchRing+1); len(cells) != want {
+		t.Fatalf("maximum ring produced %d cells, want %d", len(cells), want)
+	}
+}

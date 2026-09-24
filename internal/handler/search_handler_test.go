@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/uber/h3-go/v4"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"h3-spacial-service/internal/response"
 	"h3-spacial-service/internal/service"
 )
@@ -166,6 +167,38 @@ func TestSearchRingMetadata(t *testing.T) {
 			}
 			if !seen[origin.String()] {
 				t.Fatal("origin missing")
+			}
+		})
+	}
+}
+
+func TestSearchErrorResponses(t *testing.T) {
+	for _, tt := range []struct {
+		name, query string
+		err         error
+		status      int
+		message     string
+		called      bool
+	}{
+		{"ring over limit", "ring=101", nil, 400, "Ring size must be an integer between 0 and 100", false},
+		{"huge ring", "ring=2147483647", nil, 400, "Ring size must be an integer between 0 and 100", false},
+		{"invalid zoom", "zoom=23", nil, 400, "Zoom must be an integer between 0 and 22", false},
+		{"oversized BSON", "ring=1", fmt.Errorf("find listings: %w", mongo.CommandError{Code: 10334, Name: "BSONObjectTooLarge", Message: "private database details"}), 400, "Search area is too large. Reduce ring and try again", true},
+		{"other Mongo error", "ring=1", mongo.CommandError{Code: 13, Message: "private database details"}, 500, "Unable to search properties", true},
+		{"untyped error", "ring=1", errors.New("BSONObjectTooLarge"), 500, "Unable to search properties", true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &searchStub{err: tt.err}
+			r := gin.New()
+			r.GET("/search", NewSearchHandler(service.NewH3Service(), repo, log.New(io.Discard, "", 0)).SearchProperties)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, httptest.NewRequest("GET", "/search?lat=28&lng=77&"+tt.query, nil))
+			var body map[string]any
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if w.Code != tt.status || len(body) != 2 || body["success"] != false || body["message"] != tt.message || repo.called != tt.called {
+				t.Fatalf("unexpected response: status=%d body=%s repository called=%v", w.Code, w.Body.String(), repo.called)
 			}
 		})
 	}
