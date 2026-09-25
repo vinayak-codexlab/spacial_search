@@ -49,6 +49,7 @@ func CORS() gin.HandlerFunc {
         origin := c.GetHeader("Origin")
 
         if origin == "http://localhost:5173" ||
+			origin == "https://geoestate-teal.vercel.app/" ||
             origin == "https://geoestate-bi8kfodgm-vinayak-codexlab.vercel.app" {
             c.Header("Access-Control-Allow-Origin", origin)
             c.Header("Vary", "Origin")
