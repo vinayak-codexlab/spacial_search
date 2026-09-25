@@ -44,3 +44,23 @@ func SecurityHeaders() gin.HandlerFunc {
 		c.Next()
 	}
 }
+func CORS() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        origin := c.GetHeader("Origin")
+
+        if origin == "http://localhost:5173" ||
+            origin == "https://your-frontend-domain.com" {
+            c.Header("Access-Control-Allow-Origin", origin)
+            c.Header("Vary", "Origin")
+            c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        }
+
+        if c.Request.Method == http.MethodOptions {
+            c.AbortWithStatus(http.StatusNoContent)
+            return
+        }
+
+        c.Next()
+    }
+}
