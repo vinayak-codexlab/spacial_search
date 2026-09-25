@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// ListingSummary limits the public response to the listing card fields.
+// ListingSummary limits the public response to the listing card field.
 func ListingSummary(listing bson.M) bson.M {
 	details := nestedDocument(listing["listing_details"])
 	address := nestedDocument(listing["listing_address"])
