@@ -29,7 +29,7 @@ func (r *PropertyRepository) SearchByHexagons(ctx context.Context, hexagons []st
 	filter := bson.M{fmt.Sprintf("h3_res%d", resolution): bson.M{"$in": hexagons}}
 	opts := options.Find().SetProjection(bson.M{
 		"_id": 1, "listing_id": 1, "listing_type": 1, "coverImageKey": 1, "currency": 1,
-		"h3_res7": 1, "h3_res8": 1, "h3_res9": 1,
+		"h3_res6": 1, "h3_res7": 1, "h3_res8": 1, "h3_res9": 1, "h3_res10": 1, "h3_res11": 1,
 		"listing_details.listing_name": 1, "listing_details.listing_status": 1,
 		"listing_details.bhk_type": 1, "listing_details.area": 1,
 		"listing_details.area_unit_type": 1, "listing_details.furnishing": 1,

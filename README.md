@@ -47,7 +47,7 @@ Latitude and longitude are required. Zoom defaults to 12 (range 0–22). Search 
 }
 ```
 
-MongoDB projects only the fields needed for listing summaries. Each response item contains `_id`, `listing_id`, `title`, `listing_type`, `coverImageKey`, `price`, `currency`, `status`, `lat`, `lng`, `locality`, `city`, `h3_res7`, `h3_res8`, `h3_res9`, `bhk`, `area`, `area_unit`, and `furnishing`. Nested listing details, address, and property price are flattened; listing type, area unit, and furnishing are uppercase. Missing currency defaults to `INR`. Missing text fields are empty strings and missing numeric fields are null. No matches returns HTTP 200 with `data: []` and `meta.count: 0`. `meta.count` is the number of returned listings; metadata also reports the effective zoom, ring, and H3 field. Invalid parameters return HTTP 400. Ring is capped before H3 allocation at 100 (at most 30,301 cells) to bound search-area memory and query size. MongoDB BSONObjectTooLarge errors return HTTP 400 with `Search area is too large. Reduce ring and try again`; other database errors return HTTP 500 with a generic message. Error envelopes use `success: false` and `message`.
+MongoDB projects only the fields needed for listing summaries. Each response item contains `_id`, `listing_id`, `title`, `listing_type`, `coverImageKey`, `price`, `currency`, `status`, `lat`, `lng`, `locality`, `city`, `h3_res6`, `h3_res7`, `h3_res8`, `h3_res9`, `h3_res10`, `h3_res11`, `bhk`, `area`, `area_unit`, and `furnishing`. Nested listing details, address, and property price are flattened; listing type, area unit, and furnishing are uppercase. Missing currency defaults to `INR`. Missing text fields are empty strings and missing numeric fields are null. No matches returns HTTP 200 with `data: []` and `meta.count: 0`. `meta.count` is the number of returned listings; metadata also reports the effective zoom, ring, and H3 field. Invalid parameters return HTTP 400. Ring is capped before H3 allocation at 100 (at most 30,301 cells) to bound search-area memory and query size. MongoDB BSONObjectTooLarge errors return HTTP 400 with `Search area is too large. Reduce ring and try again`; other database errors return HTTP 500 with a generic message. Error envelopes use `success: false` and `message`.
 
 Search uses a single `find` cursor with no count, sort, skip, or limit. All cursor batches are read within a 30-second query deadline; the HTTP write timeout is 40 seconds. A timeout is reported as a database failure, not an empty result. Result order is unspecified.
 
@@ -91,14 +91,14 @@ Set `REDIS_URL=redis://localhost:6379/0` to enable caching, or use a `rediss://`
 The cache sorts and deduplicates a copy of the target H3 cells. Keys include the database/collection namespace, schema version, resolution, sorted cells:
 
 ```text
-h3:listingOnboarding%2Flistings:v5:res8:882d538661ffffff,882d538663ffffff
+h3:listingOnboarding%2Flistings:v6:res8:882d538661ffffff,882d538663ffffff
 ```
 
 Cache hits return all stored matching listings without querying MongoDB. Successful results, including empty results, are cached as JSON. MongoDB errors are never cached. Cache misses, malformed entries, and Redis failures fall back to MongoDB. Redis operations have a 100ms budget and retries are disabled; clients close on shutdown.
 
 Results can be stale until the TTL expires. Future listing write endpoints must invalidate affected cached queries or accept this staleness. Use separate Redis databases for environments that share MongoDB database/collection names but point at different servers. Cache latency depends on network and deployment; sub-millisecond responses are not guaranteed.
 
-Cache version v5 isolates complete results from older paginated entries. Cached JSON uses number-preserving decoding to avoid rounding large integer fields.
+Cache version v6 isolates results containing all H3 fields (resolutions 6–11) from older cached projections. Cached JSON uses number-preserving decoding to avoid rounding large integer fields.
 
 ## Why test files exist
 

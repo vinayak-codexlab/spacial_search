@@ -41,7 +41,7 @@ func (r *CachedPropertyRepository) key(cells []string, resolution int) string {
 	sorted := slices.Clone(cells)
 	slices.Sort(sorted)
 	sorted = slices.Compact(sorted)
-	return fmt.Sprintf("h3:%s:v5:res%d:%s", url.QueryEscape(r.namespace), resolution, strings.Join(sorted, ","))
+	return fmt.Sprintf("h3:%s:v6:res%d:%s", url.QueryEscape(r.namespace), resolution, strings.Join(sorted, ","))
 }
 
 func (r *CachedPropertyRepository) SearchByHexagons(ctx context.Context, cells []string, resolution int) ([]bson.M, error) {
