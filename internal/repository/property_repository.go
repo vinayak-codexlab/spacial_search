@@ -14,6 +14,10 @@ type PropertyRepository struct {
 	collection *mongo.Collection
 }
 
+// MaxSearchResults bounds MongoDB cursor decoding and the HTTP response size.
+// Clients must narrow their search area when more listings are available.
+const MaxSearchResults int64 = 250
+
 func NewPropertyRepository(collection *mongo.Collection) *PropertyRepository {
 	return &PropertyRepository{collection: collection}
 }
@@ -27,7 +31,7 @@ func (r *PropertyRepository) SearchByHexagons(ctx context.Context, hexagons []st
 		return listings, nil
 	}
 	filter := bson.M{fmt.Sprintf("h3_res%d", resolution): bson.M{"$in": hexagons}}
-	opts := options.Find().SetProjection(bson.M{
+	opts := options.Find().SetLimit(MaxSearchResults).SetBatchSize(100).SetProjection(bson.M{
 		"_id": 1, "listing_id": 1, "listing_type": 1, "coverImageKey": 1, "currency": 1,
 		"h3_res6": 1, "h3_res7": 1, "h3_res8": 1, "h3_res9": 1, "h3_res10": 1, "h3_res11": 1,
 		"listing_details.listing_name": 1, "listing_details.listing_status": 1,

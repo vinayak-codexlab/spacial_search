@@ -107,11 +107,14 @@ func TestSearchReturnsAllMatches(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if body.Meta.Count != 125 || body.Meta.ResolutionUsed != "h3_res9" || body.Meta.Zoom != 12 || body.Meta.Ring != 1 || body.Meta.TargetHexesCount != 7 || body.Message != "Data fetched successfully" {
+	if body.Meta.Count != 125 || body.Meta.ResultLimit != 250 || body.Meta.ResolutionUsed != "h3_res9" || body.Meta.Zoom != 12 || body.Meta.Ring != 1 || body.Meta.TargetHexesCount != 7 || body.Message != "Data fetched successfully" {
 		t.Fatalf("unexpected metadata: %+v", body)
 	}
 	if w.Code != 200 || !body.Success || len(body.Data) != 125 || body.Data[0]["title"] != "Example" || body.Data[0]["extra_field"] != nil {
 		t.Fatalf("unexpected result: %s", w.Body.String())
+	}
+	if w.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatalf("search response is cacheable: %q", w.Header().Get("Cache-Control"))
 	}
 	origin, err := h3.LatLngToCell(h3.NewLatLng(28, 77), 9)
 	if err != nil {
@@ -180,8 +183,8 @@ func TestSearchErrorResponses(t *testing.T) {
 		message     string
 		called      bool
 	}{
-		{"ring over limit", "ring=101", nil, 400, "Ring size must be an integer between 0 and 100", false},
-		{"huge ring", "ring=2147483647", nil, 400, "Ring size must be an integer between 0 and 100", false},
+		{"ring over limit", "ring=26", nil, 400, "Ring must be an integer between 0 and 25", false},
+		{"huge ring", "ring=2147483647", nil, 400, "Ring must be an integer between 0 and 25", false},
 		{"invalid zoom", "zoom=23", nil, 400, "Zoom must be an integer between 0 and 22", false},
 		{"oversized BSON", "ring=1", fmt.Errorf("find listings: %w", mongo.CommandError{Code: 10334, Name: "BSONObjectTooLarge", Message: "private database details"}), 400, "Search area is too large. Reduce ring and try again", true},
 		{"other Mongo error", "ring=1", mongo.CommandError{Code: 13, Message: "private database details"}, 500, "Unable to search properties", true},

@@ -10,7 +10,7 @@
 - `internal/middleware`: plain-text access logging, panic recovery, security headers.
 - `internal/handler`: request validation and HTTP responses.
 - `internal/service`: H3 search-area calculation.
-- `internal/repository`: MongoDB H3 filtering and fetching all matching listings.
+- `internal/repository`: MongoDB H3 filtering and fetching up to the response limit.
 - `internal/response`: response envelope types.
 
 ## Configuration and startup
@@ -36,20 +36,20 @@ Search failures log the database, collection, failed operation, and underlying e
 curl 'http://localhost:3000/api/v1/listings/search?lat=28.6139&lng=77.2090&zoom=12&ring=1'
 ```
 
-Latitude and longitude are required. Zoom defaults to 12 (range 0–22). Search calculates the origin H3 cell, calls `GridDisk(ring)` for all cells within `ring` grid steps of the center, and queries the matching `h3_resN` field using `$in`. Zoom 0–4 uses resolution 6, 5–8 uses 7 (city/district), 9–11 uses 8 (locality/neighborhood), 12–14 uses 9 (street/block), 15–17 uses 10, and 18–22 uses 11 (detailed property area). Zoom 0 is retained as a supported overview level. `ring` defaults to 1 and accepts integers from 0 to 100: 0 searches only the center, 1 includes its immediate neighbors, 2 includes two rings, and so on. For a regular hexagonal grid the cell count is `1 + 3*k*(k + 1)` (1, 7, 19, 37, ...); pentagons can reduce it. `meta.target_hexes_count` reports the actual generated cell count. All matching listing summaries are returned; `page` and `limit` are ignored and the response has no pagination metadata.
+Latitude and longitude are required. Zoom defaults to 12 (range 0–22). Search calculates the origin H3 cell, calls `GridDisk(ring)` for all cells within `ring` grid steps of the center, and queries the matching `h3_resN` field using `$in`. Zoom 0–4 uses resolution 6, 5–8 uses 7 (city/district), 9–11 uses 8 (locality/neighborhood), 12–14 uses 9 (street/block), 15–17 uses 10, and 18–22 uses 11 (detailed property area). Zoom 0 is retained as a supported overview level. `ring` defaults to 1 and accepts integers from 0 to 25: 0 searches only the center, 1 includes its immediate neighbors, 2 includes two rings, and so on. For a regular hexagonal grid the cell count is `1 + 3*k*(k + 1)` (1, 7, 19, 37, ...); pentagons can reduce it. `meta.target_hexes_count` reports the actual generated cell count. At most 250 listing summaries are returned (`meta.result_limit`); narrow the ring if the result reaches that limit. `page` and `limit` are ignored and the response has no pagination metadata.
 
 ```json
 {
   "success": true,
   "message": "Data fetched successfully",
-  "meta": { "count": 1, "resolution_used": "h3_res9", "zoom": 12, "ring": 1, "target_hexes_count": 7 },
+  "meta": { "count": 1, "result_limit": 250, "resolution_used": "h3_res9", "zoom": 12, "ring": 1, "target_hexes_count": 7 },
   "data": [{ "title": "Example listing" }]
 }
 ```
 
-MongoDB projects only the fields needed for listing summaries. Each response item contains `_id`, `listing_id`, `title`, `listing_type`, `coverImageKey`, `price`, `currency`, `status`, `lat`, `lng`, `locality`, `city`, `h3_res6`, `h3_res7`, `h3_res8`, `h3_res9`, `h3_res10`, `h3_res11`, `bhk`, `area`, `area_unit`, and `furnishing`. Nested listing details, address, and property price are flattened; listing type, area unit, and furnishing are uppercase. Missing currency defaults to `INR`. Missing text fields are empty strings and missing numeric fields are null. No matches returns HTTP 200 with `data: []` and `meta.count: 0`. `meta.count` is the number of returned listings; metadata also reports the effective zoom, ring, and H3 field. Invalid parameters return HTTP 400. Ring is capped before H3 allocation at 100 (at most 30,301 cells) to bound search-area memory and query size. MongoDB BSONObjectTooLarge errors return HTTP 400 with `Search area is too large. Reduce ring and try again`; other database errors return HTTP 500 with a generic message. Error envelopes use `success: false` and `message`.
+MongoDB projects only the fields needed for listing summaries. Each response item contains `_id`, `listing_id`, `title`, `listing_type`, `coverImageKey`, `price`, `currency`, `status`, `lat`, `lng`, `locality`, `city`, `h3_res6`, `h3_res7`, `h3_res8`, `h3_res9`, `h3_res10`, `h3_res11`, `bhk`, `area`, `area_unit`, and `furnishing`. Nested listing details, address, and property price are flattened; listing type, area unit, and furnishing are uppercase. Missing currency defaults to `INR`. Missing text fields are empty strings and missing numeric fields are null. No matches returns HTTP 200 with `data: []` and `meta.count: 0`. `meta.count` is the number of returned listings; metadata also reports the effective zoom, ring, H3 field, and response cap. Invalid parameters return HTTP 400. Ring is capped before H3 allocation at 25 (at most 1,951 cells) to bound search-area memory and query size. MongoDB BSONObjectTooLarge errors return HTTP 400 with `Search area is too large. Reduce ring size and try again`; other database errors return HTTP 500 with a generic message. Error envelopes use `success: false` and `message`.
 
-Search uses a single `find` cursor with no count, sort, skip, or limit. All cursor batches are read within a 30-second query deadline; the HTTP write timeout is 40 seconds. A timeout is reported as a database failure, not an empty result. Result order is unspecified.
+Search uses a single `find` cursor with no count, sort, or skip, and a hard limit of 250 documents. All cursor batches are read within a 30-second query deadline; the HTTP write timeout is 40 seconds. A timeout is reported as a database failure, not an empty result. Result order is unspecified.
 
 `GET /health/live` is a process liveness endpoint, not a database readiness probe.
 
@@ -57,7 +57,7 @@ Search uses a single `find` cursor with no count, sort, skip, or limit. All curs
 
 Access logs use Morgan-style plain text on stdout: `GET /api/v1/listings/search 200 5.123 ms - 45` (method, path, status, duration and response bytes). Startup prints `DB connected successfully` after the database ping and `Server is running on PORT 3000` after binding the HTTP listener. Query strings, headers and bodies are excluded. Proxy headers are not trusted by default; configure explicit trusted proxy addresses in `internal/router` if deploying behind a proxy.
 
-The server drains requests for up to 10 seconds on SIGINT/SIGTERM, then disconnects MongoDB with a separate timeout. Configure TLS at your ingress/reverse proxy. Authentication and rate limiting depend on deployment requirements and are not implemented here.
+The server drains requests for up to 10 seconds on SIGINT/SIGTERM, then disconnects MongoDB with a separate timeout. Configure TLS at your ingress/reverse proxy. The public search route has a per-source-IP limit of 120 requests per minute. Gin does not trust proxy headers, so configure explicit trusted proxy addresses only when your ingress topology requires it; otherwise all proxied traffic is seen as the proxy IP. Authentication is still an application/ingress decision: this API intentionally exposes only the projected public listing fields, but deploy it behind authentication if the listings are not public.
 
 Create the following indexes in the configured collection before serving substantial traffic (run via your normal database administration workflow):
 

@@ -15,11 +15,12 @@ func New(search *handler.SearchHandler, logger *log.Logger) *gin.Engine {
 	r := gin.New()
 	_ = r.SetTrustedProxies(nil)
 	r.HandleMethodNotAllowed = true
-	r.Use(middleware.RequestLogger(logger), middleware.Recovery(logger), middleware.SecurityHeaders(),middleware.CORS(),)
+	r.Use(middleware.RequestLogger(logger), middleware.Recovery(logger), middleware.SecurityHeaders(), middleware.CORS())
 	r.NoRoute(func(c *gin.Context) { response.Error(c, http.StatusNotFound, "Route not found") })
 	r.NoMethod(func(c *gin.Context) { response.Error(c, http.StatusMethodNotAllowed, "Method not allowed") })
 	r.GET("/health/live", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"success": true, "message": "Service is running"}) })
 	v1 := r.Group("/api/v1")
+	v1.Use(middleware.RateLimit(120))
 	v1.GET("/listings/search", search.SearchProperties)
 	return r
 }

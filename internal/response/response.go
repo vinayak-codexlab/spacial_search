@@ -8,6 +8,7 @@ type SearchMeta struct {
 	Zoom             int    `json:"zoom"`
 	Ring             int    `json:"ring"`
 	TargetHexesCount int    `json:"target_hexes_count"`
+	ResultLimit      int    `json:"result_limit"`
 }
 
 type ListResponse[T any] struct {

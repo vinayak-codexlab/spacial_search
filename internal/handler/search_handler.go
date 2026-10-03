@@ -36,6 +36,9 @@ func NewSearchHandler(h3Service *service.H3Service, repository PropertySearcher,
 }
 
 func (h *SearchHandler) SearchProperties(c *gin.Context) {
+	// Coordinates in search URLs can be sensitive. Do not allow browsers or
+	// shared intermediaries to retain search responses.
+	c.Header("Cache-Control", "private, no-store")
 	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
 	if err != nil || math.IsNaN(lat) || math.IsInf(lat, 0) || lat < -90 || lat > 90 {
 		response.Error(c, http.StatusBadRequest, "Latitude must be a valid number between -90 and 90")
@@ -87,6 +90,7 @@ func (h *SearchHandler) SearchProperties(c *gin.Context) {
 		Meta: response.SearchMeta{
 			Count: len(listings), ResolutionUsed: fmt.Sprintf("h3_res%d", resolution),
 			Zoom: zoom, Ring: int(ring), TargetHexesCount: len(hexagons),
+			ResultLimit: 250,
 		},
 		Data: listings,
 	})

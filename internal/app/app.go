@@ -48,6 +48,7 @@ func Run(ctx context.Context, cfg *config.Config, logger *log.Logger) error {
 		Addr: ":" + cfg.Port, Handler: router.New(search, logger),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second,
 		WriteTimeout: handler.SearchTimeout + 10*time.Second, IdleTimeout: 60 * time.Second,
+		MaxHeaderBytes: 8 << 10,
 	}
 	listener, err := net.Listen("tcp", server.Addr)
 	if err != nil {

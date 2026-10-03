@@ -4,9 +4,11 @@ import (
 	"github.com/uber/h3-go/v4"
 )
 
-// MaxSearchRing bounds GridDisk memory and keeps the MongoDB $in filter well
-// below the BSON command limit (at most 30,301 H3 cells).
-const MaxSearchRing = 100
+// MaxSearchRing bounds GridDisk work and the MongoDB $in filter to 1,951 cells.
+// This is deliberately a service limit, rather than merely a BSON-size limit:
+// an internet-facing endpoint must not allow one request to trigger an
+// arbitrarily expensive geographic scan.
+const MaxSearchRing = 25
 
 type H3Service struct{}
 
