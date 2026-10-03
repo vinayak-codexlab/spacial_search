@@ -1,0 +1,12 @@
+{
+  "name": "h3-spacial-service-api-tests",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test:api": "vitest run --config test/vitest.config.mjs",
+    "test:api:watch": "vitest --config test/vitest.config.mjs"
+  },
+  "devDependencies": {
+    "vitest": "5.0.3"
+  }
+}

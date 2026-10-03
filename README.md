@@ -78,6 +78,18 @@ go test ./...
 go vet ./...
 ```
 
+## Live API tests with Vitest
+
+Vitest provides black-box API contract tests in `test/api`. It does not mock the Go service: first start an instance with a reachable MongoDB, then set its base URL and run the suite.
+
+```powershell
+$env:API_BASE_URL = "http://127.0.0.1:3000"
+npm.cmd install
+npm.cmd run test:api
+```
+
+Without `API_BASE_URL`, Vitest reports the live API suite as skipped to prevent misleading mock-only results. The suite checks a valid search response and each malformed query response.
+
 ## MongoDB documents
 
 This service only reads MongoDB. Other services own listing schemas and writes. Search requires the appropriate top-level string field (`h3_res6` through `h3_res11`) for the selected resolution. Populate the new `h3_res6`, `h3_res10`, and `h3_res11` fields in the listing writer or backfill them from coordinates; this service does not generate stored fields or indexes. Documents missing the selected field will not match. Summary fields are read from `listing_details`, `listing_address`, and `commercial_details.property_price`, alongside the projected top-level identifiers, currency, cover image, and H3 cells.
