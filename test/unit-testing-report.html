@@ -3,26 +3,333 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unit Test Report — h3-spacial-service</title>
-  <style>body{font:16px/1.5 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 20px;color:#172033}h1{margin-bottom:0}.meta{color:#526072}table{border-collapse:collapse;width:100%;margin:18px 0}th,td{border:1px solid #d8dee9;padding:10px;text-align:left}th{background:#f2f5f9}.pass{color:#087443;font-weight:700}.blocked{color:#9a5c00;font-weight:700}code,pre{background:#f2f5f9;border-radius:4px}code{padding:2px 4px}pre{padding:12px;white-space:pre-wrap}</style>
+  <title>Unit Test API Report</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success-bg: #064e3b;
+      --success-text: #34d399;
+      --error-bg: #7f1d1d;
+      --error-text: #fca5a5;
+      --code-bg: #090d16;
+      --accent: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+
+    header {
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .metadata {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .metadata code {
+      background: var(--card-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .note-box {
+      background: #1e293b80;
+      border-left: 4px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .cases-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .case {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .case-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .case h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .badge.ok {
+      background-color: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid #10b98140;
+    }
+
+    .badge.err {
+      background-color: var(--error-bg);
+      color: var(--error-text);
+      border: 1px solid #ef444440;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-top: 12px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: #e2e8f0;
+      padding: 12px 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 0;
+      border: 1px solid #1e293b;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+    }
+
+    h3.section-heading {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: var(--card-bg);
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--text-muted);
+      padding: 12px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
 </head>
 <body>
-  <h1>Unit Test Report</h1>
-  <p class="meta">h3-spacial-service · Generated 2026-10-03 (Asia/Kolkata)</p>
-  <p><strong>Status:</strong> Partially passed; H3-dependent packages are blocked by the local toolchain.</p>
-  <h2>Executed</h2>
-  <pre>go test ./internal/cache ./internal/config ./internal/database ./internal/middleware ./internal/repository ./internal/response</pre>
-  <table><thead><tr><th>Package</th><th>Result</th><th>Notes</th></tr></thead><tbody>
-    <tr><td>internal/cache</td><td class="pass">Passed</td><td>No test files</td></tr>
-    <tr><td>internal/config</td><td class="pass">Passed</td><td>Configuration validation</td></tr>
-    <tr><td>internal/database</td><td class="pass">Passed</td><td>No test files</td></tr>
-    <tr><td>internal/middleware</td><td class="pass">Passed</td><td>Rate limit and hostile CORS preflight coverage</td></tr>
-    <tr><td>internal/repository</td><td class="pass">Passed</td><td>Cache behavior and serialization</td></tr>
-    <tr><td>internal/response</td><td class="pass">Passed</td><td>Response formatting</td></tr>
-  </tbody></table>
-  <h2>Blocked full suite</h2>
-  <pre>go test ./...</pre>
-  <p class="blocked">Blocked:</p><p>The H3 Go binding requires CGO. CGO is disabled locally; enabling it fails because <code>gcc</code> is not installed. This blocks <code>cmd/api</code>, <code>internal/app</code>, <code>internal/handler</code>, <code>internal/router</code>, and <code>internal/service</code>.</p>
-  <p>Run <code>go test ./...</code> and <code>go vet ./...</code> in CI with a C compiler and H3 native build dependencies.</p>
+
+  <header>
+    <h1>Unit Test Report</h1>
+    <div class="metadata">
+      Generated 2026-10-03 (Asia/Kolkata) · <code>GET /api/v1/listings/search</code>
+    </div>
+    <div class="note-box">
+      <strong>Note:</strong> This GET endpoint uses query parameters, not a request body. Each card keeps the request and its respective expected response separate. H3-dependent endpoint tests require CGO and cannot run locally.
+    </div>
+  </header>
+
+  <main class="cases-grid">
+
+    <section class="case">
+      <div class="case-header">
+        <h2>1. Valid default search</h2>
+        <span class="badge ok">200 OK</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=28&amp;lng=77</code></pre>
+      <div class="section-title">Response (Cache-Control: private, no-store)</div>
+      <pre><code>{"success":true,"message":"Data fetched successfully","meta":{"count":0,"resolution_used":"h3_res9","zoom":12,"ring":1,"target_hexes_count":7,"result_limit":250},"data":[]}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>2. Valid explicit zoom</h2>
+        <span class="badge ok">200 OK</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=28&amp;lng=77&amp;zoom=15&amp;ring=1</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":true,"message":"Data fetched successfully","meta":{"count":0,"resolution_used":"h3_res10","zoom":15,"ring":1,"target_hexes_count":7,"result_limit":250},"data":[]}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>3. Missing latitude</h2>
+        <span class="badge err">400 Bad Request</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lng=77</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Latitude must be a valid number between -90 and 90"}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>4. Invalid latitude</h2>
+        <span class="badge err">400 Bad Request</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=NaN&amp;lng=77</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Latitude must be a valid number between -90 and 90"}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>5. Missing longitude</h2>
+        <span class="badge err">400 Bad Request</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=28</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Longitude must be a valid number between -180 and 180"}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>6. Longitude out of range</h2>
+        <span class="badge err">400 Bad Request</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=28&amp;lng=181</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Longitude must be a valid number between -180 and 180"}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>7. Unsupported zoom</h2>
+        <span class="badge err">400 Bad Request</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=28&amp;lng=77&amp;zoom=23</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Zoom must be an integer between 0 and 22"}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>8. Invalid ring</h2>
+        <span class="badge err">400 Bad Request</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=28&amp;lng=77&amp;ring=26</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Ring must be an integer between 0 and 25"}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>9. Database failure</h2>
+        <span class="badge err">500 Internal Error</span>
+      </div>
+      <div class="section-title">Request</div>
+      <pre><code>GET /api/v1/listings/search?lat=28&amp;lng=77
+// Test setup: repository returns an internal error</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Unable to search properties"}</code></pre>
+    </section>
+
+    <section class="case">
+      <div class="case-header">
+        <h2>10. MongoDB command too large</h2>
+        <span class="badge err">400 Bad Request</span>
+      </div>
+      <div class="section-title">Test Setup</div>
+      <pre><code>MongoDB error code 10334</code></pre>
+      <div class="section-title">Response</div>
+      <pre><code>{"success":false,"message":"Search area is too large. Reduce ring size and try again"}</code></pre>
+    </section>
+
+  </main>
+
+  <h3 class="section-heading">Middleware Test Responses</h3>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Request Condition</th>
+          <th>Response</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>More than 120 API requests/minute from one source</td>
+          <td><code>429 Too Many Requests</code> — <code>Retry-After: 60</code></td>
+        </tr>
+        <tr>
+          <td>Untrusted CORS preflight</td>
+          <td><code>403 Forbidden</code> — No <code>Access-Control-Allow-Origin</code> header</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
 </body>
 </html>
