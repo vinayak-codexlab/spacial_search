@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Test Report — h3-spacial-service</title>
+  <style>body{font:16px/1.5 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 20px;color:#172033}h1{margin-bottom:0}.meta{color:#526072}table{border-collapse:collapse;width:100%;margin:18px 0}th,td{border:1px solid #d8dee9;padding:10px;text-align:left}th{background:#f2f5f9}.pass{color:#087443;font-weight:700}.pending{color:#9a5c00;font-weight:700}.risk{color:#ab2525;font-weight:700}code{background:#f2f5f9;border-radius:4px;padding:2px 4px}</style>
+</head>
+<body>
+  <h1>Security Test Report</h1>
+  <p class="meta">h3-spacial-service · Generated 2026-10-03 (Asia/Kolkata)</p>
+  <p><strong>Status:</strong> Partial verification completed. A full H3-dependent build and vulnerability-database scan could not run locally.</p>
+  <h2>Automated checks</h2>
+  <table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+    <tr><td>Non-H3 unit tests</td><td class="pass">Passed</td></tr>
+    <tr><td>Non-H3 <code>go vet</code></td><td class="pass">Passed</td></tr>
+    <tr><td><code>go mod verify</code></td><td class="pass">Passed — all modules verified</td></tr>
+    <tr><td>Race/full H3 suite</td><td class="pending">Blocked — CGO compiler unavailable</td></tr>
+    <tr><td><code>govulncheck</code> / <code>gosec</code></td><td class="pending">Not installed; not run</td></tr>
+  </tbody></table>
+  <h2>Verified controls</h2>
+  <table><thead><tr><th>Area</th><th>Result</th></tr></thead><tbody>
+    <tr><td>Bounded numeric request input and MongoDB query construction</td><td class="pass">Pass</td></tr>
+    <tr><td>Search-area, result, batch, header, and timeout limits</td><td class="pass">Pass</td></tr>
+    <tr><td>Rate limiting and hostile CORS preflight test coverage</td><td class="pass">Pass</td></tr>
+    <tr><td>Security headers and no-store search responses</td><td class="pass">Pass</td></tr>
+    <tr><td>Generic client errors and non-sensitive access logs</td><td class="pass">Pass</td></tr>
+  </tbody></table>
+  <h2>Release conditions</h2>
+  <ol><li>Run full tests, vet, and race detection in CGO-enabled CI.</li><li>Install and run <code>govulncheck ./...</code> and <code>gosec ./...</code>.</li><li class="risk">If listings are not public, add authentication/authorization before deployment.</li><li>Configure explicit trusted proxy addresses if traffic is forwarded through a proxy.</li></ol>
+</body>
+</html>

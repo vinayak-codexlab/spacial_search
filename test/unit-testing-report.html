@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unit Test Report — h3-spacial-service</title>
+  <style>body{font:16px/1.5 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 20px;color:#172033}h1{margin-bottom:0}.meta{color:#526072}table{border-collapse:collapse;width:100%;margin:18px 0}th,td{border:1px solid #d8dee9;padding:10px;text-align:left}th{background:#f2f5f9}.pass{color:#087443;font-weight:700}.blocked{color:#9a5c00;font-weight:700}code,pre{background:#f2f5f9;border-radius:4px}code{padding:2px 4px}pre{padding:12px;white-space:pre-wrap}</style>
+</head>
+<body>
+  <h1>Unit Test Report</h1>
+  <p class="meta">h3-spacial-service · Generated 2026-10-03 (Asia/Kolkata)</p>
+  <p><strong>Status:</strong> Partially passed; H3-dependent packages are blocked by the local toolchain.</p>
+  <h2>Executed</h2>
+  <pre>go test ./internal/cache ./internal/config ./internal/database ./internal/middleware ./internal/repository ./internal/response</pre>
+  <table><thead><tr><th>Package</th><th>Result</th><th>Notes</th></tr></thead><tbody>
+    <tr><td>internal/cache</td><td class="pass">Passed</td><td>No test files</td></tr>
+    <tr><td>internal/config</td><td class="pass">Passed</td><td>Configuration validation</td></tr>
+    <tr><td>internal/database</td><td class="pass">Passed</td><td>No test files</td></tr>
+    <tr><td>internal/middleware</td><td class="pass">Passed</td><td>Rate limit and hostile CORS preflight coverage</td></tr>
+    <tr><td>internal/repository</td><td class="pass">Passed</td><td>Cache behavior and serialization</td></tr>
+    <tr><td>internal/response</td><td class="pass">Passed</td><td>Response formatting</td></tr>
+  </tbody></table>
+  <h2>Blocked full suite</h2>
+  <pre>go test ./...</pre>
+  <p class="blocked">Blocked:</p><p>The H3 Go binding requires CGO. CGO is disabled locally; enabling it fails because <code>gcc</code> is not installed. This blocks <code>cmd/api</code>, <code>internal/app</code>, <code>internal/handler</code>, <code>internal/router</code>, and <code>internal/service</code>.</p>
+  <p>Run <code>go test ./...</code> and <code>go vet ./...</code> in CI with a C compiler and H3 native build dependencies.</p>
+</body>
+</html>
